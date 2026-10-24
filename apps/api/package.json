@@ -1,0 +1,42 @@
+{
+  "name": "@chivo/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fastify API with authentication, Binance public market data and health.",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chivo/contracts": "workspace:*",
+    "@chivo/database": "workspace:*",
+    "@chivo/security": "workspace:*",
+    "@fastify/cookie": "^11.1.3",
+    "@fastify/cors": "^11.3.1",
+    "@fastify/swagger": "^9.9.2",
+    "@fastify/swagger-ui": "^6.1.2",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "fastify": "^5.12.7",
+    "fastify-type-provider-zod": "^7.0.0",
+    "openapi-types": "^12.1.3",
+    "otpauth": "^9.5.2",
+    "pg": "^8.23.1",
+    "redis": "^6.3.0",
+    "ws": "^8.22.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

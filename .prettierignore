@@ -1,0 +1,14 @@
+pnpm-lock.yaml
+services/python-engine/uv.lock
+services/python-engine/.venv
+apps/dashboard/.next
+apps/dashboard/next-env.d.ts
+**/dist
+**/coverage
+
+# Project source documents and agent/OpenSpec assets are not auto-formatted.
+AGENTS.md
+SPEC.md
+PROMPTS.md
+.opencode/**
+openspec/**

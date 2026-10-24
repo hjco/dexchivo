@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  displayName  String     @db.VarChar(120)
+  passwordHash String     @db.VarChar(512)
+  totpSecret   String?    @db.VarChar(1024)
+  totpEnabled  Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  sessions     Session[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  tokenHash  String   @unique @db.VarChar(64)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  ipAddress  String?  @db.VarChar(64)
+  userAgent  String?  @db.VarChar(512)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @db.Uuid
+  actor      String   @db.VarChar(320)
+  action     String   @db.VarChar(80)
+  targetType String?  @db.VarChar(80)
+  targetId   String?  @db.VarChar(128)
+  metadata   Json?
+  ipAddress  String?  @db.VarChar(64)
+  userAgent  String?  @db.VarChar(512)
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Instrument {
+  instrumentId       String   @id @db.VarChar(96)
+  exchange           String   @db.VarChar(32)
+  marketType         String   @db.VarChar(32)
+  venueSymbol        String   @db.VarChar(64)
+  baseAsset          String   @db.VarChar(32)
+  quoteAsset         String   @db.VarChar(32)
+  settleAsset        String?  @db.VarChar(32)
+  status             String   @db.VarChar(16)
+  tickSize           Decimal  @db.Decimal(30, 12)
+  stepSize           Decimal  @db.Decimal(30, 12)
+  minNotional        Decimal? @db.Decimal(30, 12)
+  contractMultiplier Decimal  @db.Decimal(30, 12)
+  quantityUnit       String   @db.VarChar(16)
+  pricePrecision     Int
+  quantityPrecision  Int
+  maxLeverage        Decimal? @db.Decimal(30, 12)
+  capabilities       Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  candles            Candle[]
+
+  @@unique([exchange, venueSymbol])
+  @@index([baseAsset, quoteAsset])
+  @@map("instruments")
+}
+
+model Candle {
+  id           String     @id @default(uuid()) @db.Uuid
+  instrumentId String     @db.VarChar(96)
+  timeframe    String     @db.VarChar(8)
+  openTime     DateTime
+  closeTime    DateTime
+  open         Decimal    @db.Decimal(30, 12)
+  high         Decimal    @db.Decimal(30, 12)
+  low          Decimal    @db.Decimal(30, 12)
+  close        Decimal    @db.Decimal(30, 12)
+  volume       Decimal    @db.Decimal(30, 12)
+  isClosed     Boolean
+  ingestedAt   DateTime   @default(now())
+  instrument   Instrument @relation(fields: [instrumentId], references: [instrumentId], onDelete: Cascade)
+
+  @@unique([instrumentId, timeframe, openTime])
+  @@index([instrumentId, timeframe, closeTime])
+  @@map("candles")
+}
+
+model PaperAccount {
+  accountId     String   @id @db.Uuid
+  executionMode String   @default("PAPER") @db.VarChar(8)
+  baseCurrency  String   @default("USDT") @db.VarChar(8)
+  cashBalance   Decimal  @db.Decimal(30, 12)
+  marginUsed    Decimal  @default(0) @db.Decimal(30, 12)
+  unrealizedPnl Decimal  @default(0) @db.Decimal(30, 12)
+  realizedPnl   Decimal  @default(0) @db.Decimal(30, 12)
+  equity        Decimal  @db.Decimal(30, 12)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orderIntents  OrderIntent[]
+  orders        Order[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("paper_accounts")
+}
+
+model OrderIntent {
+  intentId       String   @id @db.Uuid
+  idempotencyKey String   @unique @db.VarChar(255)
+  accountId      String   @db.Uuid
+  correlationId  String   @db.Uuid
+  executionMode  String   @db.VarChar(8)
+  controlMode    String   @db.VarChar(8)
+  instrumentId   String   @db.VarChar(96)
+  side           String   @db.VarChar(4)
+  positionSide   String   @db.VarChar(4)
+  type           String   @db.VarChar(16)
+  timeInForce    String?  @db.VarChar(4)
+  quantity       Decimal  @db.Decimal(30, 12)
+  limitPrice     Decimal? @db.Decimal(30, 12)
+  stopPrice      Decimal? @db.Decimal(30, 12)
+  stopLoss       Decimal? @db.Decimal(30, 12)
+  takeProfit     Decimal? @db.Decimal(30, 12)
+  reduceOnly     Boolean
+  state          String   @db.VarChar(24)
+  signalId       String?  @db.Uuid
+  strategyId     String?  @db.VarChar(64)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  account        PaperAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+  orders         Order[]
+
+  @@index([accountId, state])
+  @@index([instrumentId])
+  @@map("order_intents")
+}
+
+model Order {
+  orderId           String   @id @db.Uuid
+  intentId          String?  @db.Uuid
+  accountId         String   @db.Uuid
+  instrumentId      String   @db.VarChar(96)
+  executionMode     String   @db.VarChar(8)
+  controlMode       String   @db.VarChar(8)
+  side              String   @db.VarChar(4)
+  positionSide      String   @db.VarChar(4)
+  type              String   @db.VarChar(16)
+  timeInForce       String?  @db.VarChar(4)
+  quantity          Decimal  @db.Decimal(30, 12)
+  limitPrice        Decimal? @db.Decimal(30, 12)
+  stopPrice         Decimal? @db.Decimal(30, 12)
+  filledQuantity    Decimal  @default(0) @db.Decimal(30, 12)
+  remainingQuantity Decimal  @db.Decimal(30, 12)
+  avgFillPrice      Decimal? @db.Decimal(30, 12)
+  status            String   @db.VarChar(16)
+  reduceOnly        Boolean
+  clientOrderId     String?  @db.VarChar(128)
+  venueOrderId      String?  @db.VarChar(128)
+  rejectReason      String?  @db.VarChar(255)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  account           PaperAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+  intent            OrderIntent? @relation(fields: [intentId], references: [intentId])
+  fills             Fill[]
+
+  @@index([accountId, status])
+  @@index([instrumentId])
+  @@map("orders")
+}
+
+model Fill {
+  fillId      String   @id @db.Uuid
+  orderId     String   @db.Uuid
+  venueFillId String?  @db.VarChar(128)
+  instrumentId String  @db.VarChar(96)
+  executionMode String @db.VarChar(8)
+  side        String   @db.VarChar(4)
+  positionSide String  @db.VarChar(4)
+  price       Decimal  @db.Decimal(30, 12)
+  quantity    Decimal  @db.Decimal(30, 12)
+  fee         Decimal  @db.Decimal(30, 12)
+  feeAsset    String   @db.VarChar(16)
+  liquidity   String   @db.VarChar(8)
+  filledAt    DateTime
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([instrumentId])
+  @@map("fills")
+}
+
+model Position {
+  positionId    String   @id @db.Uuid
+  accountId     String   @db.Uuid
+  instrumentId  String   @db.VarChar(96)
+  executionMode String   @db.VarChar(8)
+  side          String   @db.VarChar(4)
+  quantity      Decimal  @default(0) @db.Decimal(30, 12)
+  entryPrice    Decimal  @default(0) @db.Decimal(30, 12)
+  markPrice     Decimal? @db.Decimal(30, 12)
+  unrealizedPnl Decimal  @default(0) @db.Decimal(30, 12)
+  realizedPnl   Decimal  @default(0) @db.Decimal(30, 12)
+  leverage      Decimal  @default(1) @db.Decimal(30, 12)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@unique([accountId, instrumentId, side, executionMode])
+  @@index([accountId])
+  @@map("positions")
+}
+
+model LedgerEntry {
+  entryId       String   @id @db.Uuid
+  accountId     String   @db.Uuid
+  type          String   @db.VarChar(24)
+  asset         String   @db.VarChar(16)
+  amount        Decimal  @db.Decimal(30, 12)
+  balanceAfter  Decimal  @db.Decimal(30, 12)
+  referenceType String?  @db.VarChar(32)
+  referenceId   String?  @db.VarChar(128)
+  occurredAt    DateTime
+  createdAt     DateTime @default(now())
+  account       PaperAccount @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+
+  @@index([accountId, occurredAt])
+  @@map("ledger_entries")
+}

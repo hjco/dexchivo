@@ -1,0 +1,47 @@
+{
+  "name": "chivo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted modular crypto trading platform. PAPER-first; LIVE disabled by default.",
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @chivo/api dev",
+    "dev:dashboard": "pnpm --filter @chivo/dashboard dev",
+    "dev:python": "cd services/python-engine && CHIVO_RELOAD=true uv run python -m chivo_python_engine",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v",
+    "db:generate": "pnpm --filter @chivo/database db:generate",
+    "db:migrate": "pnpm --filter @chivo/database db:migrate",
+    "db:migrate:deploy": "pnpm --filter @chivo/database db:migrate:deploy",
+    "db:seed": "pnpm --filter @chivo/database db:seed",
+    "db:studio": "pnpm --filter @chivo/database db:studio",
+    "postinstall": "pnpm db:generate",
+    "lint": "eslint . --max-warnings 0",
+    "lint:python": "cd services/python-engine && uv run ruff check . && uv run ruff format --check .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck:python": "cd services/python-engine && uv run pyright",
+    "test": "pnpm -r --if-present test",
+    "test:db": "RUN_DB_TESTS=true pnpm --filter @chivo/api test",
+    "test:python": "cd services/python-engine && uv run pytest",
+    "build": "pnpm -r --if-present build",
+    "check:ts": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check:python": "pnpm lint:python && pnpm typecheck:python && pnpm test:python",
+    "check": "pnpm check:ts && pnpm check:python && docker compose config --quiet"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0"
+  }
+}

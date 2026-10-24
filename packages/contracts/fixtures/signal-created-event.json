@@ -1,0 +1,21 @@
+{
+  "eventId": "3f1a8f5e-6f1f-4f53-9e7f-1c1f5b5d1a01",
+  "eventType": "strategy.signal.created",
+  "schemaVersion": 1,
+  "occurredAt": "2026-10-22T12:00:05Z",
+  "correlationId": "9a4f2c70-2f2a-4e8b-a5c8-3b7f8f0d2b02",
+  "producer": "python-engine",
+  "payload": {
+    "strategyId": "fvg_choch_v1",
+    "strategyVersion": "1.0.0",
+    "exchange": "BINANCE",
+    "instrumentId": "BINANCE:USD-M:BTCUSDT",
+    "timeframe": "15m",
+    "side": "LONG",
+    "entryType": "MARKET",
+    "stopLoss": "67900.0",
+    "takeProfit": "69300.0",
+    "candleClosedAt": "2026-10-22T12:00:00Z",
+    "expiresAt": "2026-10-22T12:15:00Z"
+  }
+}

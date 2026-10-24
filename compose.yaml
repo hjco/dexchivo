@@ -1,0 +1,39 @@
+name: chivo
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chivo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chivo_local_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-chivo}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - chivo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes', '--save', '60', '1']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - chivo_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  chivo_postgres_data:
+  chivo_redis_data:
